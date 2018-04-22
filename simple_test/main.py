@@ -52,6 +52,10 @@ def main() -> None:
 
     args = _get_args()
 
+    # TODO: hacky
+    args.runner._timeout = args.timeout
+    args.runner._remote = args.remote
+
     with args.runner:
         test_runner = TextTestRunner(verbosity=args.verbosity)
         test_suite = TestSuite([p(name=method, **args.__dict__)
@@ -72,19 +76,18 @@ def _get_args() -> Namespace:
                             epilog='Made with love by Bailey Parker.\n\n'
                                    'Special thanks to test contributors: '
                                    'Nick Hale, Sam Beckley, '
-                                   'Peter Lazorchak, Rachel Kinney, and '
-                                   'Andrew Rojas')
+                                   'Peter Lazorchak, Rachel Kinney, '
+                                   'Andrew Rojas, and Tristan Orton-Urbina')
 
     parser.add_argument('--sc', dest='runner', type=_make_runner,
                         default='./sc', help='path to the sc binary')
 
-    # TODO: wire these into runner
-    parser.add_argument('--timeout', type=float,
+    parser.add_argument('--timeout', type=float, default=10.0,
                         help='How long to wait for the simple compiler to run,'
                              ' ssh connections/communication, for a line to '
                              'be printed by a simple program under test, etc.')
 
-    parser.add_argument('--remote',
+    parser.add_argument('--remote', default=None,
                         help='The user@hostname (or short name) that can be '
                              'ssh\'d to and is capable of compiling the '
                              'assembly output by the simple compiler. Used to '
@@ -119,7 +122,7 @@ def _get_args() -> Namespace:
 
 def _make_runner(path: str) -> Runner:
     try:
-        return Runner.create(Path(Path.cwd(), path), remote='arm')
+        return Runner.create(Path(Path.cwd(), path))
     except BinaryNotFoundError as e:
         cmd = "{} --sc path/to/sc".format(argv[0])
         msg = "simple compiler does not exist: {} (try: {})" \
